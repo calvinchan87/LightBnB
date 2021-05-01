@@ -39,7 +39,6 @@ const getUserWithEmail = function(email) {
   return pool.query(queryString, values)
   .then(result => result.rows[0])
   .catch(err => console.log(err.message));
-
 };
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -61,7 +60,6 @@ const getUserWithId = function(id) {
   return pool.query(queryString, values)
   .then(result => result.rows[0])
   .catch((err) => console.log(err.message));
-
 }
 exports.getUserWithId = getUserWithId;
 
@@ -88,7 +86,6 @@ const addUser =  function(user) {
   return pool.query(queryString, values)
   .then(result => result.rows[0])
   .catch(err => console.log(err.message));
-
 }
 exports.addUser = addUser;
 
@@ -100,7 +97,23 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  // return getAllProperties(null, 2);
+
+  const queryString = `
+  SELECT reservations.*, properties.*, avg(property_reviews.rating) as average_rating FROM reservations
+  JOIN properties ON properties.id = reservations.property_id
+  JOIN property_reviews ON property_reviews.property_id = properties.id
+  WHERE reservations.guest_id = $1
+  GROUP BY reservations.id, properties.id
+  ORDER BY reservations.start_date
+  LIMIT $2;
+  `;
+
+  const values = [guest_id, limit];
+
+  return pool.query(queryString, values)
+  .then(result => result.rows)
+  .catch(err => console.log(err.message));
 }
 exports.getAllReservations = getAllReservations;
 
@@ -120,7 +133,9 @@ const getAllProperties = function(options, limit = 10) {
   // return Promise.resolve(limitedProperties);
 
   const queryString = `
-  SELECT * FROM properties
+  SELECT properties.*, avg(property_reviews.rating) as average_rating FROM properties
+  JOIN property_reviews ON property_id = properties.id
+  GROUP BY properties.id
   LIMIT $1;
   `;
 
